@@ -1,0 +1,164 @@
+# ============================================================================
+# Nexus Platform — .gitignore
+# Node.js / Next.js / NestJS Turborepo monorepo
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# Environment variables — NEVER commit secrets
+# ----------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+
+# ----------------------------------------------------------------------------
+# Dependencies
+# ----------------------------------------------------------------------------
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+
+# ----------------------------------------------------------------------------
+# Build outputs
+# ----------------------------------------------------------------------------
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+
+# Turbo cache
+.turbo/
+
+# TypeScript compiled output
+*.tsbuildinfo
+*.d.ts.map
+
+
+# ----------------------------------------------------------------------------
+# Prisma
+# ----------------------------------------------------------------------------
+# Generated Prisma client (regenerated via `prisma generate`)
+packages/database/node_modules/.prisma/
+# Migration lockfile is intentionally tracked; generated SQL is not
+# packages/database/prisma/migrations/
+
+
+# ----------------------------------------------------------------------------
+# Logs
+# ----------------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+
+# ----------------------------------------------------------------------------
+# Runtime / OS artifacts
+# ----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+
+# ----------------------------------------------------------------------------
+# Editor / IDE
+# ----------------------------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+
+# ----------------------------------------------------------------------------
+# Testing
+# ----------------------------------------------------------------------------
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+playwright/.cache/
+
+
+# ----------------------------------------------------------------------------
+# Next.js specific
+# ----------------------------------------------------------------------------
+.next/
+.vercel
+next-env.d.ts
+
+
+# ----------------------------------------------------------------------------
+# NestJS specific
+# ----------------------------------------------------------------------------
+# compiled JS from NestJS build — exclude when using ts-node / SWC
+apps/api/dist/
+
+
+# ----------------------------------------------------------------------------
+# Docker
+# ----------------------------------------------------------------------------
+# Local override file — keep base docker-compose.yml tracked
+docker-compose.override.yml
+
+
+# ----------------------------------------------------------------------------
+# Uploads & generated media (local dev)
+# ----------------------------------------------------------------------------
+uploads/
+public/uploads/
+
+
+# ----------------------------------------------------------------------------
+# Certificates & keys (should never be committed)
+# ----------------------------------------------------------------------------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+
+# ----------------------------------------------------------------------------
+# Package manager lock files — keep npm's; ignore others to avoid conflicts
+# ----------------------------------------------------------------------------
+yarn.lock
+pnpm-lock.yaml
+# package-lock.json is intentionally tracked
+
+
+# ----------------------------------------------------------------------------
+# Miscellaneous
+# ----------------------------------------------------------------------------
+.cache/
+tmp/
+temp/
+.temp/
+*.tmp
+*.bak
+*.orig
+.eslintcache
+.stylelintcache

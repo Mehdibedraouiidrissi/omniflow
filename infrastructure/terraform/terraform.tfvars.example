@@ -1,0 +1,42 @@
+# ── Nexus Platform — Terraform Variables Example ──────────────────────────────
+# Copy this file to terraform.tfvars and fill in real values.
+# Never commit terraform.tfvars to version control.
+
+# Core settings
+environment = "staging"
+region      = "us-east-1"
+app_name    = "nexus"
+domain_name = "nexusplatform.io"
+
+# Database
+db_instance_class        = "db.t3.medium"
+db_username              = "nexus_admin"
+db_name                  = "nexus_db"
+db_allocated_storage     = 20
+db_max_allocated_storage = 100
+db_multi_az              = false
+db_backup_retention_days = 7
+
+# Redis
+redis_node_type = "cache.t3.micro"
+redis_num_nodes = 1
+
+# ECS
+ecs_task_cpu      = 512
+ecs_task_memory   = 1024
+ecs_desired_count = 1
+ecs_min_count     = 1
+ecs_max_count     = 4
+
+# Networking
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.0.0/24", "10.0.1.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# SSL — ACM cert ARN (must be in us-east-1 for CloudFront)
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Alerting
+alert_email            = "ops@nexusplatform.io"
+alarm_cpu_threshold    = 80
+alarm_memory_threshold = 80

@@ -1,0 +1,361 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  AWS_REGION: us-east-1
+
+jobs:
+  # ── Determine target environment ──────────────────────────────────────────────
+  environment:
+    name: Resolve Environment
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.resolve.outputs.env_name }}
+      url: ${{ steps.resolve.outputs.env_url }}
+    steps:
+      - id: resolve
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "env_name=prod" >> $GITHUB_OUTPUT
+            echo "env_url=https://omniflow.io" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=staging" >> $GITHUB_OUTPUT
+            echo "env_url=https://staging.omniflow.io" >> $GITHUB_OUTPUT
+          fi
+
+  # ── Build and push Docker images to ECR ──────────────────────────────────────
+  build-push-ecr:
+    name: Build & Push to ECR
+    runs-on: ubuntu-latest
+    needs: environment
+    environment:
+      name: ${{ needs.environment.outputs.name }}
+      url: ${{ needs.environment.outputs.url }}
+    outputs:
+      api_image: ${{ steps.push-api.outputs.image }}
+      web_image: ${{ steps.push-web.outputs.image }}
+      worker_image: ${{ steps.push-worker.outputs.image }}
+      image_tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        id: tag
+        run: echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API image
+        id: push-api
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/api:${{ steps.tag.outputs.tag }}
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      - name: Set API image output
+        run: |
+          echo "image=${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/api:${{ steps.tag.outputs.tag }}" >> $GITHUB_OUTPUT
+        id: push-api-out
+
+      - name: Build and push Web image
+        id: push-web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.web
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/web:${{ steps.tag.outputs.tag }}
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Build and push Worker image
+        id: push-worker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.worker
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/worker:${{ steps.tag.outputs.tag }}
+            ${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  # ── Run database migrations ───────────────────────────────────────────────────
+  run-migrations:
+    name: Run Migrations
+    runs-on: ubuntu-latest
+    needs: [environment, build-push-ecr]
+    environment:
+      name: ${{ needs.environment.outputs.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migrations via ECS task
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --task-definition omniflow-${{ needs.environment.outputs.name }}-api \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.PRIVATE_SUBNET_IDS }}],securityGroups=[${{ secrets.ECS_SECURITY_GROUP_ID }}],assignPublicIp=DISABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["node","apps/api/dist/cli.js","migration:run"]}]}' \
+            --query 'tasks[0].taskArn' \
+            --output text)
+
+          echo "Migration task ARN: $TASK_ARN"
+
+          # Wait for the task to complete
+          aws ecs wait tasks-stopped \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --tasks "$TASK_ARN"
+
+          # Check exit code
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+          echo "Migrations completed successfully"
+
+  # ── Deploy to ECS ──────────────────────────────────────────────────────────────
+  deploy-ecs:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: [environment, build-push-ecr, run-migrations]
+    environment:
+      name: ${{ needs.environment.outputs.name }}
+      url: ${{ needs.environment.outputs.url }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy API service
+        run: |
+          # Update task definition with new image
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition omniflow-${{ needs.environment.outputs.name }}-api \
+            --query taskDefinition)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq \
+            --arg IMAGE "${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/api:${{ needs.build-push-ecr.outputs.image_tag }}" \
+            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_TASK_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)
+
+          aws ecs update-service \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --service omniflow-${{ needs.environment.outputs.name }}-api \
+            --task-definition "$NEW_TASK_ARN" \
+            --force-new-deployment
+
+      - name: Deploy Web service
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition omniflow-${{ needs.environment.outputs.name }}-web \
+            --query taskDefinition)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq \
+            --arg IMAGE "${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/web:${{ needs.build-push-ecr.outputs.image_tag }}" \
+            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_TASK_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)
+
+          aws ecs update-service \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --service omniflow-${{ needs.environment.outputs.name }}-web \
+            --task-definition "$NEW_TASK_ARN" \
+            --force-new-deployment
+
+      - name: Deploy Worker service
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition omniflow-${{ needs.environment.outputs.name }}-worker \
+            --query taskDefinition)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq \
+            --arg IMAGE "${{ steps.ecr-login.outputs.registry }}/omniflow-${{ needs.environment.outputs.name }}/worker:${{ needs.build-push-ecr.outputs.image_tag }}" \
+            '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_TASK_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)
+
+          aws ecs update-service \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --service omniflow-${{ needs.environment.outputs.name }}-worker \
+            --task-definition "$NEW_TASK_ARN" \
+            --force-new-deployment
+
+      - name: Wait for ECS services to stabilize
+        run: |
+          echo "Waiting for API service..."
+          aws ecs wait services-stable \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --services omniflow-${{ needs.environment.outputs.name }}-api &
+
+          echo "Waiting for Web service..."
+          aws ecs wait services-stable \
+            --cluster omniflow-${{ needs.environment.outputs.name }}-cluster \
+            --services omniflow-${{ needs.environment.outputs.name }}-web &
+
+          wait
+          echo "All services stabilized"
+
+  # ── Smoke Tests ───────────────────────────────────────────────────────────────
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [environment, deploy-ecs]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for services to warm up
+        run: sleep 30
+
+      - name: Health check — API
+        run: |
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 10 \
+              "${{ needs.environment.outputs.url }}/api/health" 2>/dev/null || echo "000")
+
+            if [ "$STATUS" = "200" ]; then
+              echo "API health check passed (attempt $i)"
+              exit 0
+            fi
+
+            echo "Attempt $i: got $STATUS, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "API health check failed after 10 attempts"
+          exit 1
+
+      - name: Health check — Web
+        run: |
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 10 \
+              "${{ needs.environment.outputs.url }}/" 2>/dev/null || echo "000")
+
+            if [ "$STATUS" = "200" ]; then
+              echo "Web health check passed (attempt $i)"
+              exit 0
+            fi
+
+            echo "Attempt $i: got $STATUS, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "Web health check failed after 10 attempts"
+          exit 1
+
+  # ── Notify ────────────────────────────────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [environment, deploy-ecs, smoke-test]
+    if: always()
+
+    steps:
+      - name: Notify Slack on success
+        if: needs.smoke-test.result == 'success' && vars.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST "${{ vars.SLACK_WEBHOOK_URL }}" \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "Deployment successful",
+              "attachments": [{
+                "color": "good",
+                "fields": [
+                  {"title": "Environment", "value": "${{ needs.environment.outputs.name }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": true},
+                  {"title": "Actor", "value": "${{ github.actor }}", "short": true},
+                  {"title": "URL", "value": "${{ needs.environment.outputs.url }}", "short": true}
+                ]
+              }]
+            }'
+
+      - name: Notify Slack on failure
+        if: needs.smoke-test.result != 'success' && vars.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST "${{ vars.SLACK_WEBHOOK_URL }}" \
+            -H 'Content-type: application/json' \
+            --data '{
+              "text": "Deployment FAILED",
+              "attachments": [{
+                "color": "danger",
+                "fields": [
+                  {"title": "Environment", "value": "${{ needs.environment.outputs.name }}", "short": true},
+                  {"title": "Commit", "value": "${{ github.sha }}", "short": true},
+                  {"title": "Run", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false}
+                ]
+              }]
+            }'

@@ -1,0 +1,36 @@
+{
+  "name": "omniflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "All-in-one CRM, marketing automation, and business management SaaS platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "db:generate": "cd packages/database && npx prisma generate",
+    "db:migrate": "cd packages/database && npx prisma migrate dev",
+    "db:migrate:prod": "cd packages/database && npx prisma migrate deploy",
+    "db:seed": "cd packages/database && npx prisma db seed",
+    "db:studio": "cd packages/database && npx prisma studio",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.0",
+    "prettier": "^3.3.0",
+    "eslint": "^9.0.0",
+    "@types/node": "^20.14.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.8.0"
+}
