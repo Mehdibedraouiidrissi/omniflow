@@ -1,8 +1,8 @@
 export const APP_NAME = process.env['NEXT_PUBLIC_APP_NAME'] || 'Omniflow';
 
-export const API_URL = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:4000/api';
+export const API_URL = process.env['NEXT_PUBLIC_API_URL'] || '/api';
 
-export const WS_URL = process.env['NEXT_PUBLIC_WS_URL'] || 'http://localhost:4000';
+export const WS_URL = process.env['NEXT_PUBLIC_WS_URL'] || '';
 
 export const AUTH_TOKEN_KEY = 'omniflow_access_token';
 

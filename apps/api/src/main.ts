@@ -45,10 +45,10 @@ async function bootstrap() {
 
   // CORS
   app.enableCors({
-    origin: corsOrigins.split(',').map((o) => o.trim()),
+    origin: true, // Allow all origins in development; restrict via CORS_ORIGINS in production
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Request-ID'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Request-ID', 'Accept', 'Origin'],
   });
 
   // Global prefix
