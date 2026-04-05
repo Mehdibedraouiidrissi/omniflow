@@ -19,8 +19,8 @@ export class FormsService {
         tenantId,
         name: data.name,
         type: (data.type as any) || 'FORM',
-        fields: data.fields || [],
-        settings: data.settings || {},
+        fields: (data.fields || []) as any,
+        settings: (data.settings || {}) as any,
         status: 'DRAFT',
       },
     });
@@ -120,7 +120,7 @@ export class FormsService {
         tenantId,
         formId,
         contactId: contactId || null,
-        data: cleanData,
+        data: cleanData as any,
         ipAddress,
         userAgent,
       },
@@ -138,7 +138,7 @@ export class FormsService {
         const email = cleanData.email as string;
         const phone = cleanData.phone as string;
 
-        let contact = null;
+        let contact: { id: string } | null = null;
         if (email) {
           contact = await this.prisma.contact.findFirst({
             where: { tenantId, email: email.toLowerCase(), deletedAt: null },
@@ -160,10 +160,12 @@ export class FormsService {
         }
 
         // Link submission to contact
-        await this.prisma.formSubmission.update({
-          where: { id: submission.id },
-          data: { contactId: contact.id },
-        });
+        if (contact) {
+          await this.prisma.formSubmission.update({
+            where: { id: submission.id },
+            data: { contactId: contact.id },
+          });
+        }
       } catch (error) {
         this.logger.error(`Failed to create/link contact from form submission: ${error}`);
       }

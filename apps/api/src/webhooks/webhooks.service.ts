@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Queue = any;
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/services/crypto.service';
 import { parsePagination, buildPaginatedResponse } from '../common/pipes/parse-pagination.pipe';

@@ -116,7 +116,7 @@ export class AuthService {
             timezone: 'UTC',
             dateFormat: 'MM/DD/YYYY',
             currency: 'USD',
-          },
+          } as any,
         },
       });
 
@@ -141,7 +141,7 @@ export class AuthService {
             settings: ['read', 'update'],
             members: ['create', 'read', 'update', 'delete'],
             integrations: ['create', 'read', 'update', 'delete'],
-          },
+          } as any,
         },
       });
 
@@ -160,7 +160,7 @@ export class AuthService {
             calendars: ['read', 'update'],
             workflows: ['read'],
             reporting: ['read'],
-          },
+          } as any,
         },
       });
 
@@ -647,7 +647,7 @@ export class AuthService {
           adminUserId,
           ipAddress,
           userAgent,
-        },
+        } as any,
         ipAddress: ipAddress ?? null,
         userAgent: userAgent ?? null,
       },

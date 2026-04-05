@@ -88,7 +88,7 @@ export class NotificationsService {
         type: data.type,
         title: data.title,
         body: data.body,
-        data: notificationData,
+        data: notificationData as any,
       },
     });
 

@@ -1,6 +1,8 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Job<T = any> = any;
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/services/crypto.service';
 
@@ -81,7 +83,7 @@ export class WebhookProcessor {
         webhookId: webhook.id,
         tenantId,
         event,
-        payload,
+        payload: payload as any,
         responseStatus: responseStatus ?? 0,
         responseBody: responseBody.substring(0, 5000),
         attempts: job.attemptsMade + 1,

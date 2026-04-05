@@ -71,7 +71,7 @@ export class MembershipsService {
     const course = await this.prisma.course.findFirst({ where: { id, tenantId, deletedAt: null } });
     if (!course) throw new NotFoundException('Course not found');
 
-    return this.prisma.course.update({ where: { id }, data });
+    return this.prisma.course.update({ where: { id }, data: data as any });
   }
 
   async deleteCourse(tenantId: string, id: string) {
@@ -118,7 +118,7 @@ export class MembershipsService {
         moduleId,
         name: data.name,
         contentType: data.contentType as any,
-        content: data.content || {},
+        content: (data.content || {}) as any,
         videoUrl: data.videoUrl,
         duration: data.duration,
         position: data.position,
@@ -130,7 +130,7 @@ export class MembershipsService {
     const lesson = await this.prisma.lesson.findFirst({ where: { id: lessonId, tenantId } });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    return this.prisma.lesson.update({ where: { id: lessonId }, data });
+    return this.prisma.lesson.update({ where: { id: lessonId }, data: data as any });
   }
 
   async enrollContact(tenantId: string, courseId: string, contactId: string, userId?: string) {

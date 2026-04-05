@@ -97,7 +97,7 @@ export class TenantsService {
             timezone: 'UTC',
             dateFormat: 'MM/DD/YYYY',
             currency: 'USD',
-          },
+          } as any,
         },
       });
 
@@ -122,7 +122,7 @@ export class TenantsService {
             settings: ['read', 'update'],
             members: ['create', 'read', 'update', 'delete'],
             integrations: ['create', 'read', 'update', 'delete'],
-          },
+          } as any,
         },
       });
 
@@ -140,7 +140,7 @@ export class TenantsService {
             calendars: ['read', 'update'],
             workflows: ['read'],
             reporting: ['read'],
-          },
+          } as any,
         },
       });
 
@@ -196,7 +196,7 @@ export class TenantsService {
         faviconUrl: dto.faviconUrl,
         primaryColor: dto.primaryColor,
         customDomain: dto.customDomain,
-        settings: dto.settings,
+        settings: dto.settings as any,
       },
     });
   }

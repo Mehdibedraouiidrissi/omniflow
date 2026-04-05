@@ -51,7 +51,7 @@ export class PipelinesService {
     });
 
     // Calculate totals for each pipeline
-    const result = [];
+    const result: any[] = [];
     for (const pipeline of pipelines) {
       const totalValue = await this.prisma.opportunity.aggregate({
         where: { pipelineId: pipeline.id, status: 'OPEN', deletedAt: null },
@@ -80,7 +80,7 @@ export class PipelinesService {
     if (!pipeline) throw new NotFoundException('Pipeline not found');
 
     // Compute stats per stage
-    const stagesWithValues = [];
+    const stagesWithValues: any[] = [];
     for (const stage of pipeline.stages) {
       const agg = await this.prisma.opportunity.aggregate({
         where: { stageId: stage.id, status: 'OPEN', deletedAt: null },
@@ -347,7 +347,7 @@ export class PipelinesService {
       orderBy: { position: 'asc' },
     });
 
-    const stageStats = [];
+    const stageStats: any[] = [];
     for (const stage of stages) {
       const [count, agg, wonCount, lostCount] = await Promise.all([
         this.prisma.opportunity.count({ where: { stageId: stage.id, status: 'OPEN', deletedAt: null } }),

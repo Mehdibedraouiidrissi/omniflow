@@ -117,7 +117,7 @@ export class PaymentsService {
     const product = await this.prisma.product.findFirst({ where: { id, tenantId } });
     if (!product) throw new NotFoundException('Product not found');
 
-    return this.prisma.product.update({ where: { id }, data, include: { prices: true } });
+    return this.prisma.product.update({ where: { id }, data: data as any, include: { prices: true } });
   }
 
   async archiveProduct(tenantId: string, id: string) {
@@ -186,7 +186,7 @@ export class PaymentsService {
         sessionData: {
           successUrl: data.successUrl,
           cancelUrl: data.cancelUrl,
-        },
+        } as any,
       },
     });
   }

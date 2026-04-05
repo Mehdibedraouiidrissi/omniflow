@@ -64,7 +64,7 @@ export class AdminService {
 
     return this.prisma.tenant.update({
       where: { id: tenantId },
-      data,
+      data: data as any,
     });
   }
 
@@ -223,7 +223,7 @@ export class AdminService {
         action: 'admin.impersonate',
         entityType: 'tenant',
         entityId: tenantId,
-        metadata: { impersonatedBy: adminUserId },
+        metadata: { impersonatedBy: adminUserId } as any,
       },
     });
 

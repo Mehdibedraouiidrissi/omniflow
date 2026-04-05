@@ -57,7 +57,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                     responseData && typeof responseData === 'object' && 'id' in responseData
                       ? responseData.id
                       : undefined,
-                },
+                } as any,
                 ipAddress: request.ip ?? null,
                 userAgent: request.headers['user-agent'] ?? null,
               },

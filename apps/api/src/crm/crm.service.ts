@@ -51,7 +51,7 @@ export class CrmService {
         companyName: data.companyName,
         source: data.source,
         ownerId: data.ownerId,
-        customFields: data.customFields || {},
+        customFields: (data.customFields || {}) as any,
       },
       include: {
         contactTags: { include: { tag: true } },
@@ -181,7 +181,7 @@ export class CrmService {
     return this.prisma.contact.update({
       where: { id: contactId },
       data: {
-        ...data,
+        ...(data as any),
         email: data.email?.toLowerCase(),
         lastActivityAt: new Date(),
       },
@@ -598,7 +598,7 @@ export class CrmService {
           userId,
           type: type as any,
           title,
-          metadata,
+          metadata: metadata as any,
         },
       });
     } catch (error) {

@@ -32,7 +32,7 @@ export class AnalyticsService {
           sessionId: options.sessionId,
           eventType: options.eventType,
           eventName: options.eventName,
-          properties: options.properties || {},
+          properties: (options.properties || {}) as any,
           pageUrl: options.pageUrl,
           referrer: options.referrer,
           utmSource: options.utmSource,

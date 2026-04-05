@@ -34,7 +34,7 @@ export class IntegrationsService {
       data: {
         tenantId,
         provider: data.provider,
-        config: data.config || {},
+        config: (data.config || {}) as any,
         status: 'ACTIVE',
       },
       select: {
@@ -63,7 +63,7 @@ export class IntegrationsService {
 
     return this.prisma.integration.update({
       where: { id },
-      data: { config },
+      data: { config: config as any },
       select: {
         id: true,
         provider: true,

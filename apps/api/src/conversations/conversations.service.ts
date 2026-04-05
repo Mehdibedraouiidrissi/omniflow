@@ -232,7 +232,7 @@ export class ConversationsService {
         direction: 'OUTBOUND',
         body: content,
         status: 'DELIVERED',
-        metadata: { isInternalNote: true },
+        metadata: { isInternalNote: true } as any,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },

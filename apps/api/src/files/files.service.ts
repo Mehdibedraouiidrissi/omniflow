@@ -79,7 +79,7 @@ export class FilesService {
 
   async getSignedUrl(tenantId: string, id: string) {
     const asset = await this.findOne(tenantId, id);
-    const signedUrl = await this.storageService.getSignedDownloadUrl(asset.key);
+    const signedUrl = await this.storageService.getSignedDownloadUrl(asset.key ?? '');
 
     return { url: signedUrl, expiresIn: 3600 };
   }
@@ -88,7 +88,7 @@ export class FilesService {
     const asset = await this.findOne(tenantId, id);
 
     // Delete from S3
-    await this.storageService.delete(asset.key).catch((err) => {
+    await this.storageService.delete(asset.key ?? '').catch((err) => {
       this.logger.error(`Failed to delete file from storage: ${err.message}`);
     });
 

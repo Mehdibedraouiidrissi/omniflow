@@ -58,7 +58,7 @@ export class FunnelsService {
   async update(tenantId: string, id: string, data: Record<string, unknown>) {
     const funnel = await this.prisma.funnel.findFirst({ where: { id, tenantId, deletedAt: null } });
     if (!funnel) throw new NotFoundException('Funnel not found');
-    return this.prisma.funnel.update({ where: { id }, data });
+    return this.prisma.funnel.update({ where: { id }, data: data as any });
   }
 
   async delete(tenantId: string, id: string) {
@@ -90,7 +90,7 @@ export class FunnelsService {
       data: {
         tenantId,
         pageId: page.id,
-        content: {},
+        content: {} as any,
         publishedBy: userId,
       },
     });
@@ -114,7 +114,7 @@ export class FunnelsService {
         data: {
           tenantId,
           pageId,
-          content: data.content,
+          content: data.content as any,
           publishedBy: userId,
         },
       });

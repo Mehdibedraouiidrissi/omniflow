@@ -115,10 +115,10 @@ export class CrmContactsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk actions (tag, assign, delete)' })
   async bulkAction(@CurrentTenant() tenantId: string, @Body() dto: BulkActionDto) {
-    return this.crmService.bulkAction(tenantId, dto.action, dto.contactIds, {
-      tagName: dto.tagName,
-      assigneeId: dto.assigneeId,
-    });
+    const bulkData: Record<string, string> = {};
+    if (dto.tagName) bulkData.tagName = dto.tagName;
+    if (dto.assigneeId) bulkData.assigneeId = dto.assigneeId;
+    return this.crmService.bulkAction(tenantId, dto.action, dto.contactIds, bulkData);
   }
 
   @Post(':id/tags')

@@ -40,13 +40,17 @@ import { CommonServicesModule } from './common/services/common-services.module';
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
+      useFactory: (configService: ConfigService) => {
+        const redisPassword = configService.get<string>('REDIS_PASSWORD');
+        const redisConfig: Record<string, unknown> = {
           host: configService.get<string>('REDIS_HOST', 'localhost'),
           port: configService.get<number>('REDIS_PORT', 6379),
-          password: configService.get<string>('REDIS_PASSWORD') || undefined,
-        },
-      }),
+        };
+        if (redisPassword) {
+          redisConfig.password = redisPassword;
+        }
+        return { redis: redisConfig } as any;
+      },
       inject: [ConfigService],
     }),
     PrismaModule,

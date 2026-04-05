@@ -221,7 +221,7 @@ describe('CrmService', () => {
       const result = await service.listContacts(TENANT_ID, {});
 
       expect(result.data).toHaveLength(2);
-      expect(result.total).toBe(2);
+      expect(result.meta.total).toBe(2);
       expect(mockPrisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ tenantId: TENANT_ID, deletedAt: null }),

@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue, JobOptions } from 'bull';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Queue = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JobOptions = any;
 
 export interface QueueJobData {
   type: string;

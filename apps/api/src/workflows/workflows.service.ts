@@ -21,7 +21,7 @@ export class WorkflowsService {
           name: data.name,
           description: data.description,
           triggerType: data.triggerType as any,
-          triggerConfig: data.triggerConfig || {},
+          triggerConfig: (data.triggerConfig || {}) as any,
           createdById: userId,
           status: 'DRAFT',
         },
@@ -32,7 +32,7 @@ export class WorkflowsService {
           tenantId,
           workflowId: workflow.id,
           version: 1,
-          steps: [],
+          steps: [] as any,
         },
       });
 
@@ -85,7 +85,7 @@ export class WorkflowsService {
     });
     if (!workflow) throw new NotFoundException('Workflow not found');
 
-    return this.prisma.workflow.update({ where: { id }, data });
+    return this.prisma.workflow.update({ where: { id }, data: data as any });
   }
 
   async delete(tenantId: string, id: string) {
@@ -159,7 +159,7 @@ export class WorkflowsService {
         tenantId,
         workflowId,
         version: latestVersion.version + 1,
-        steps,
+        steps: steps as any,
       },
     });
 
@@ -268,7 +268,7 @@ export class WorkflowsService {
           workflowVersionId: latestVersion.id,
           contactId,
           status: 'RUNNING',
-          triggerData: { enrolledManually: true },
+          triggerData: { enrolledManually: true } as any,
         },
       });
     }
