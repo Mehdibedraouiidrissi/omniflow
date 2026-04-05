@@ -7,8 +7,8 @@ export interface Tenant {
   name: string;
   slug: string;
   type: string;
-  status: string;
-  logoUrl: string | null;
+  status?: string;
+  logoUrl?: string | null;
 }
 
 interface AuthState {
