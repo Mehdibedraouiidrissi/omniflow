@@ -8,7 +8,7 @@ const createJestConfig = nextJest({
 const config: Config = {
   displayName: '@omniflow/web',
   testEnvironment: 'jsdom',
-  setupFilesAfterSetup: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(ts|tsx)$',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
