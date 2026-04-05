@@ -32,7 +32,7 @@ export class SmsService {
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
     this.defaultFrom = this.configService.get<string>('TWILIO_PHONE_NUMBER', '');
 
-    if (accountSid && authToken && twilioClient) {
+    if (accountSid && accountSid.startsWith('AC') && authToken && twilioClient) {
       this.client = twilioClient(accountSid, authToken);
       this.logger.log('Twilio SMS client initialized');
     } else {
