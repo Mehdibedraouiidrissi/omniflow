@@ -46,20 +46,29 @@ export interface ResetPasswordPayload {
   password: string;
 }
 
-export async function login(payload: LoginPayload): Promise<{ user: AuthUser; tokens: AuthTokens }> {
-  const result = await apiPost<{ user: AuthUser; tokens: AuthTokens }>('/auth/login', payload);
+export interface LoginResponse {
+  user: AuthUser;
+  tenant: { id: string; name: string; slug: string; type: string };
+  tenants: Array<{ id: string; name: string; slug: string; type: string; role: string }>;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
+  const result = await apiPost<LoginResponse>('/auth/login', payload);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(AUTH_TOKEN_KEY, result.tokens.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, result.tokens.refreshToken);
+    localStorage.setItem(AUTH_TOKEN_KEY, result.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
   }
   return result;
 }
 
-export async function register(payload: RegisterPayload): Promise<{ user: AuthUser; tokens: AuthTokens }> {
-  const result = await apiPost<{ user: AuthUser; tokens: AuthTokens }>('/auth/register', payload);
+export async function register(payload: RegisterPayload): Promise<LoginResponse> {
+  const result = await apiPost<LoginResponse>('/auth/register', payload);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(AUTH_TOKEN_KEY, result.tokens.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, result.tokens.refreshToken);
+    localStorage.setItem(AUTH_TOKEN_KEY, result.accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
   }
   return result;
 }

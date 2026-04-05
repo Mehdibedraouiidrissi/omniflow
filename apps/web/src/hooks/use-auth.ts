@@ -26,14 +26,15 @@ export function useAuth() {
       try {
         const result = await authLib.login(payload);
         setUser(result.user);
-        setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+        setTenant(result.tenant);
+        setTokens(result.accessToken, result.refreshToken);
         router.push('/dashboard');
         return result;
       } finally {
         setLoading(false);
       }
     },
-    [router, setUser, setTokens, setLoading],
+    [router, setUser, setTenant, setTokens, setLoading],
   );
 
   const register = useCallback(
@@ -42,14 +43,15 @@ export function useAuth() {
       try {
         const result = await authLib.register(payload);
         setUser(result.user);
-        setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+        setTenant(result.tenant);
+        setTokens(result.accessToken, result.refreshToken);
         router.push('/dashboard');
         return result;
       } finally {
         setLoading(false);
       }
     },
-    [router, setUser, setTokens, setLoading],
+    [router, setUser, setTenant, setTokens, setLoading],
   );
 
   const logout = useCallback(async () => {
